@@ -1,0 +1,4 @@
+[tool.vercel]
+# Vercel project root is the backend/ directory.
+# Export the FastAPI app directly; do not import legacy vercel_runtime handlers.
+entrypoint = "app.main:app"

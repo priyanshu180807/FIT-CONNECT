@@ -3,7 +3,7 @@
  * Centralized HTTP helpers for all backend calls with JWT auth.
  */
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 // ─── Token Helpers ───────────────────────────────────────────────────────────
 export function getToken() {

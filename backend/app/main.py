@@ -20,6 +20,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, distinct, and_, or_, desc, asc, extract, inspect as sa_inspect, text
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.core.database import engine, Base, SessionLocal, get_db
 from app.core.security import (
@@ -45,12 +47,15 @@ from app.schemas.all_schemas import (
 )
 
 # ---------------------------------------------------------------------------
-# Create database tables.
-# ---------------------------------------------------------------------------
-Base.metadata.create_all(bind=engine)
-if "hostel" not in {column["name"] for column in sa_inspect(engine).get_columns("users")}:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN hostel VARCHAR(100)"))
+# Create tables and perform the existing hostel compatibility migration only
+# during local development. On Vercel, each request may cold-start a function;
+# repeated DDL against the production database is unsafe. Apply app tables via
+# a controlled release/migration step before deploying production traffic.
+if os.getenv("APP_ENV", "development").strip().lower() != "production":
+    Base.metadata.create_all(bind=engine)
+    if "hostel" not in {column["name"] for column in sa_inspect(engine).get_columns("users")}:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE users ADD COLUMN hostel VARCHAR(100)"))
 
 # ---------------------------------------------------------------------------
 # FastAPI Application Instance
@@ -138,26 +143,37 @@ def get_tier(pts: int):
 
 
 def ensure_reward_catalog(db: Session):
+    badge_rows = [
+        {"name": "First Step", "description": "Log your first activity.", "requirement": "Log 1 activity", "points": 50, "category": "Milestone", "icon_name": "Footprints"},
+        {"name": "Flame Keeper", "description": "Maintain a 5-day activity streak.", "requirement": "Reach a 5-day streak", "points": 150, "category": "Streak", "icon_name": "Flame"},
+        {"name": "Century Burner", "description": "Burn at least 300 calories in one workout.", "requirement": "Burn 300 kcal in one activity", "points": 100, "category": "Performance", "icon_name": "Zap"},
+        {"name": "Weekend Warrior", "description": "Be active on both weekend days in one week.", "requirement": "Log activities on Saturday and Sunday in one week", "points": 80, "category": "Milestone", "icon_name": "Award"},
+        {"name": "Campus Sprinter", "description": "Run a cumulative 25 kilometers.", "requirement": "Accumulate 25 km of running", "points": 120, "category": "Performance", "icon_name": "TrendingUp"},
+        {"name": "Desk Break Zen Master", "description": "Complete five yoga sessions.", "requirement": "Log 5 yoga sessions", "points": 100, "category": "Wellness", "icon_name": "Compass"},
+        {"name": "Department Titan", "description": "Complete a department challenge.", "requirement": "Complete a department challenge", "points": 250, "category": "Community", "icon_name": "Shield"},
+        {"name": "Iron Lungs", "description": "Complete a 10 km run or 30 km ride.", "requirement": "Run 10 km or cycle 30 km in one activity", "points": 200, "category": "Performance", "icon_name": "Target"},
+    ]
+    perk_rows = [
+        {"title": "Sports Complex Priority Pass", "category": "Campus Facilities", "description": "Priority booking access to campus sports facilities.", "cost": 500},
+        {"title": "Healthy Smoothie Voucher", "category": "Nutrition", "description": "A voucher for a healthy drink at the campus canteen.", "cost": 800},
+        {"title": "Certificate of Fitness", "category": "Recognition", "description": "A digital certificate recognizing your fitness progress.", "cost": 1200},
+        {"title": "Gym Equipment Locker Access", "category": "Campus Facilities", "description": "Access to a dedicated campus sports equipment locker.", "cost": 1500},
+    ]
+
     with reward_catalog_lock:
         try:
-            if db.query(Badge).count() == 0:
-                db.add_all([
-                    Badge(name="First Step", description="Log your first activity.", requirement="Log 1 activity", points=50, category="Milestone", icon_name="Footprints"),
-                    Badge(name="Flame Keeper", description="Maintain a 5-day activity streak.", requirement="Reach a 5-day streak", points=150, category="Streak", icon_name="Flame"),
-                    Badge(name="Century Burner", description="Burn at least 300 calories in one workout.", requirement="Burn 300 kcal in one activity", points=100, category="Performance", icon_name="Zap"),
-                    Badge(name="Weekend Warrior", description="Be active on both weekend days in one week.", requirement="Log activities on Saturday and Sunday in one week", points=80, category="Milestone", icon_name="Award"),
-                    Badge(name="Campus Sprinter", description="Run a cumulative 25 kilometers.", requirement="Accumulate 25 km of running", points=120, category="Performance", icon_name="TrendingUp"),
-                    Badge(name="Desk Break Zen Master", description="Complete five yoga sessions.", requirement="Log 5 yoga sessions", points=100, category="Wellness", icon_name="Compass"),
-                    Badge(name="Department Titan", description="Complete a department challenge.", requirement="Complete a department challenge", points=250, category="Community", icon_name="Shield"),
-                    Badge(name="Iron Lungs", description="Complete a 10 km run or 30 km ride.", requirement="Run 10 km or cycle 30 km in one activity", points=200, category="Performance", icon_name="Target"),
-                ])
-            if db.query(Perk).count() == 0:
-                db.add_all([
-                    Perk(title="Sports Complex Priority Pass", category="Campus Facilities", description="Priority booking access to campus sports facilities.", cost=500),
-                    Perk(title="Healthy Smoothie Voucher", category="Nutrition", description="A voucher for a healthy drink at the campus canteen.", cost=800),
-                    Perk(title="Certificate of Fitness", category="Recognition", description="A digital certificate recognizing your fitness progress.", cost=1200),
-                    Perk(title="Gym Equipment Locker Access", category="Campus Facilities", description="Access to a dedicated campus sports equipment locker.", cost=1500),
-                ])
+            dialect_name = db.get_bind().dialect.name
+            if dialect_name == "postgresql":
+                db.execute(postgresql_insert(Badge).values(badge_rows).on_conflict_do_nothing(index_elements=[Badge.name]))
+                db.execute(postgresql_insert(Perk).values(perk_rows).on_conflict_do_nothing(index_elements=[Perk.title]))
+            elif dialect_name == "sqlite":
+                db.execute(sqlite_insert(Badge).values(badge_rows).on_conflict_do_nothing(index_elements=[Badge.name]))
+                db.execute(sqlite_insert(Perk).values(perk_rows).on_conflict_do_nothing(index_elements=[Perk.title]))
+            else:
+                existing_badges = {name for (name,) in db.query(Badge.name).all()}
+                existing_perks = {title for (title,) in db.query(Perk.title).all()}
+                db.add_all([Badge(**row) for row in badge_rows if row["name"] not in existing_badges])
+                db.add_all([Perk(**row) for row in perk_rows if row["title"] not in existing_perks])
             db.commit()
         except Exception:
             db.rollback()

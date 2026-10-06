@@ -40,7 +40,7 @@ class User(Base):
     department = Column(String(100), nullable=False, index=True)
     hostel = Column(String(100), nullable=True)
     year = Column(String(50), nullable=False)
-    role = Column(Enum("student", "admin", "coordinator"), default="student", index=True)
+    role = Column(Enum("student", "admin", "coordinator", native_enum=False), default="student", index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -69,7 +69,7 @@ class FitnessProfile(Base):
     age = Column(Integer, nullable=False)
     height = Column(Numeric(5, 2), nullable=False)  # cm
     weight = Column(Numeric(5, 2), nullable=False)  # kg
-    fitness_level = Column(Enum("Beginner", "Intermediate", "Advanced"), default="Intermediate", index=True)
+    fitness_level = Column(Enum("Beginner", "Intermediate", "Advanced", native_enum=False), default="Intermediate", index=True)
     fitness_goal = Column(String(150), nullable=False)
     preferred_activities = Column(JSON, nullable=False)  # ['Running', 'Gym', 'Badminton']
     available_days = Column(JSON, nullable=False)        # [1, 2, 3, 4, 5, 6]
@@ -103,7 +103,7 @@ class Activity(Base):
     activity_type = Column(String(50), nullable=False, index=True)
     duration_minutes = Column(Integer, nullable=False)
     distance = Column(Numeric(6, 2), nullable=True)  # km
-    intensity = Column(Enum("Low", "Moderate", "High"), default="Moderate")
+    intensity = Column(Enum("Low", "Moderate", "High", native_enum=False), default="Moderate")
     calories = Column(Integer, nullable=False)
     activity_date = Column(Date, nullable=False, index=True)
     notes = Column(Text, nullable=True)
@@ -133,7 +133,7 @@ class Goal(Base):
     current_value = Column(Numeric(10, 2), default=0.00)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
-    status = Column(Enum("active", "completed", "expired"), default="active", index=True)
+    status = Column(Enum("active", "completed", "expired", native_enum=False), default="active", index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -156,8 +156,8 @@ class Challenge(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(150), nullable=False)
     description = Column(Text, nullable=False)
-    challenge_type = Column(Enum("individual", "department", "campus"), default="campus", nullable=False, index=True)
-    metric_type = Column(Enum("km", "mins", "kcal", "sessions"), default="km", nullable=False)
+    challenge_type = Column(Enum("individual", "department", "campus", native_enum=False), default="campus", nullable=False, index=True)
+    metric_type = Column(Enum("km", "mins", "kcal", "sessions", native_enum=False), default="km", nullable=False)
     target_value = Column(Numeric(10, 2), nullable=False)
     current_value = Column(Numeric(10, 2), default=0.00)
     start_date = Column(DateTime, nullable=False)
@@ -208,7 +208,7 @@ class Badge(Base):
     description = Column(Text, nullable=False)
     requirement = Column(String(255), nullable=False)
     points = Column(Integer, default=50, nullable=False)
-    category = Column(Enum("Streak", "Milestone", "Performance", "Community", "Wellness"), default="Milestone")
+    category = Column(Enum("Streak", "Milestone", "Performance", "Community", "Wellness", native_enum=False), default="Milestone")
     icon_name = Column(String(50), default="Award", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -314,7 +314,7 @@ class Notification(Base):
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False, nullable=False, index=True)
     notification_type = Column(
-        Enum("streak_alert", "challenge_update", "badge_unlocked", "ai_suggestion", "system"),
+        Enum("streak_alert", "challenge_update", "badge_unlocked", "ai_suggestion", "system", native_enum=False),
         default="system"
     )
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
