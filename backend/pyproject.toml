@@ -1,4 +1,20 @@
+[project]
+name = "fitconnect-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [tool.vercel]
+
 # Vercel project root is the backend/ directory.
+
 # Export the FastAPI app directly; do not import legacy vercel_runtime handlers.
+
 entrypoint = "app.main:app"
