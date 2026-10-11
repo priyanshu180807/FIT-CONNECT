@@ -7,6 +7,10 @@ dynamic = ["dependencies"]
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "database*"]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
@@ -15,6 +19,6 @@ build-backend = "setuptools.build_meta"
 
 # Vercel project root is the backend/ directory.
 
-# Export the FastAPI app directly; do not import legacy vercel_runtime handlers.
+# Export the FastAPI app directly.
 
 entrypoint = "app.main:app"
