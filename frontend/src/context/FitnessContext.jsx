@@ -54,6 +54,8 @@ export function FitnessProvider({ children }) {
   const [currentPage, setCurrentPage] = useState('landing');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
+  // True during the initial token-restore attempt; prevents rendering while auth state is unknown.
+  const [isBooting, setIsBooting] = useState(() => !!localStorage.getItem('fitconnect_token'));
 
   // Profile from backend (or defaults before login)
   const [profile, setProfile] = useState({
@@ -189,11 +191,17 @@ export function FitnessProvider({ children }) {
       setCurrentPage('dashboard');
     } catch {
       clearToken();
+    } finally {
+      setIsBooting(false);
     }
   }, [loadGamingData]);
 
   useEffect(() => {
-    if (getToken()) loadUserFromToken();
+    if (getToken()) {
+      loadUserFromToken();
+    } else {
+      setIsBooting(false);
+    }
   }, [loadUserFromToken]);
 
   function applyUserData(me) {
@@ -458,7 +466,7 @@ export function FitnessProvider({ children }) {
     <FitnessContext.Provider
       value={{
         currentPage, setCurrentPage,
-        isLoading, authError,
+        isLoading, isBooting, authError,
         profile, updateProfile,
         activities, addActivity, loadActivities,
         calculateCalories,

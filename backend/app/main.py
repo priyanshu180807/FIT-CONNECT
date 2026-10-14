@@ -71,7 +71,11 @@ def configured_cors_origins():
     configured = os.getenv("CORS_ORIGINS", "").strip()
     if not configured:
         if os.getenv("APP_ENV", "development").strip().lower() == "production":
-            raise RuntimeError("Set CORS_ORIGINS to the deployed frontend origin in production.")
+            raise RuntimeError(
+                "CORS_ORIGINS is not set. In the Vercel backend project's environment variables, "
+                "add CORS_ORIGINS=https://<your-frontend>.vercel.app (no trailing slash). "
+                "Multiple origins may be comma-separated."
+            )
         return ["http://localhost:5173", "http://127.0.0.1:5173"]
     origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
     if "*" in origins:

@@ -41,7 +41,7 @@ export default function DashboardPage() {
   // Load real dashboard data from backend on mount
   useEffect(() => {
     loadDashboard();
-  }, []);
+  }, [loadDashboard]);
 
   const tier = getUserTier(points);
 
@@ -346,36 +346,48 @@ export default function DashboardPage() {
 
         {/* Right Column: Active Challenge & Recent Workouts */}
         <div className="dash-col-right">
-          {/* Active Campus Challenge Card */}
-          <div className="glass-card mb-4" onClick={() => setCurrentPage('challenges')}>
-            <div className="card-header-flex">
-              <div>
-                <span className="chip chip-violet mb-1">{activeChallenge.category} Challenge</span>
-                <h3 className="card-title">{activeChallenge.title}</h3>
+          {/* Active Campus Challenge Card — only rendered when challenge data has loaded */}
+          {activeChallenge ? (
+            <div className="glass-card mb-4" onClick={() => setCurrentPage('challenges')}>
+              <div className="card-header-flex">
+                <div>
+                  <span className="chip chip-violet mb-1">{activeChallenge.category} Challenge</span>
+                  <h3 className="card-title">{activeChallenge.title}</h3>
+                </div>
+                <ChevronRight size={20} className="text-muted" />
               </div>
-              <ChevronRight size={20} className="text-muted" />
-            </div>
 
-            <p className="challenge-card-desc">{activeChallenge.description}</p>
+              <p className="challenge-card-desc">{activeChallenge.description}</p>
 
-            <div className="challenge-progress-box">
-              <div className="ch-prog-row">
-                <span className="ch-lbl">Department Progress</span>
-                <span className="ch-num">{activeChallenge.currentValue} / {activeChallenge.target}</span>
-              </div>
-              <div className="progress-track">
-                <div 
-                  className="progress-fill progress-violet" 
-                  style={{ width: `${Math.round((activeChallenge.currentValue / activeChallenge.targetValue) * 100)}%` }} 
-                />
-              </div>
-              <div className="ch-meta-row">
-                <span>⏱️ {activeChallenge.duration}</span>
-                <span>👥 {activeChallenge.participants} Students</span>
-                <span className="text-amber">⚡ +{activeChallenge.pointsReward} pts</span>
+              <div className="challenge-progress-box">
+                <div className="ch-prog-row">
+                  <span className="ch-lbl">Department Progress</span>
+                  <span className="ch-num">{activeChallenge.currentValue} / {activeChallenge.target}</span>
+                </div>
+                <div className="progress-track">
+                  <div 
+                    className="progress-fill progress-violet" 
+                    style={{ width: `${Math.round((activeChallenge.currentValue / activeChallenge.targetValue) * 100)}%` }} 
+                  />
+                </div>
+                <div className="ch-meta-row">
+                  <span>⏱️ {activeChallenge.duration}</span>
+                  <span>👥 {activeChallenge.participants} Students</span>
+                  <span className="text-amber">⚡ +{activeChallenge.pointsReward} pts</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="glass-card mb-4" onClick={() => setCurrentPage('challenges')} style={{ cursor: 'pointer' }}>
+              <div className="card-header-flex">
+                <div>
+                  <h3 className="card-title">Campus Challenges</h3>
+                  <p className="card-subtitle">Join a challenge to see your progress here.</p>
+                </div>
+                <ChevronRight size={20} className="text-muted" />
+              </div>
+            </div>
+          )}
 
           {/* Badges Preview Card */}
           <div className="glass-card mb-4">

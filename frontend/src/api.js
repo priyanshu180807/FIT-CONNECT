@@ -26,7 +26,17 @@ async function apiFetch(path, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch (networkErr) {
+    // TypeError: Failed to fetch — usually CORS preflight rejection or backend unreachable.
+    throw new Error(
+      `Cannot reach the backend at ${API_BASE}. ` +
+      `Check that VITE_API_URL is set correctly and that the backend allows this origin. ` +
+      `(${networkErr.message})`
+    );
+  }
 
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
